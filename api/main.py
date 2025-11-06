@@ -1,15 +1,30 @@
+# api/main.py
 from fastapi import FastAPI
-from routers import events, people, tags, avatars, ai
+from fastapi.middleware.cors import CORSMiddleware
+from routers import events, tags, people, avatars, ai
 
 app = FastAPI(
-    title="Agentic Personal Everyday Assistant API",
-    description="Backend for managing the assistant's knowledge components.",
-    version="0.1"
+    title="Agentic Assistant Backend",
+    description="FastAPI backend storing data in Markdown files under /templates/",
+    version="0.1.0",
 )
 
-# Include routers
-app.include_router(events.router, prefix="/events", tags=["Events"])
-app.include_router(people.router, prefix="/people", tags=["People"])
-app.include_router(tags.router, prefix="/tags", tags=["Tags"])
-app.include_router(avatars.router, prefix="/avatars", tags=["Avatars"])
-app.include_router(ai.router, prefix="/ai", tags=["AI"])
+# Allow CORS for local frontend usage
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# include routers
+app.include_router(events.router, prefix="/events", tags=["events"])
+app.include_router(tags.router, prefix="/tags", tags=["tags"])
+app.include_router(people.router, prefix="/people", tags=["people"])
+app.include_router(avatars.router, prefix="/avatars", tags=["avatars"])
+app.include_router(ai.router, prefix="/ai", tags=["ai"])
+
+
+@app.get("/")
+def root():
+    return {"status": "ok", "message": "Agentic Assistant API - Markdown-backed"}

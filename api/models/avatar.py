@@ -1,13 +1,8 @@
+# api/models/avatar.py
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import Optional
 
 
-class AvatarBio(BaseModel):
-    name: str = ""
-    title: Optional[str] = None
-    summary: str = ""
-
-
-class AvatarPersonality(BaseModel):
-    traits: List[str] = []
-    description: str = ""
+class AvatarUpdate(BaseModel):
+    content: str
+    note: Optional[str] = None

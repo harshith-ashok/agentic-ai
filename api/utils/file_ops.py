@@ -1,71 +1,95 @@
+# api/utils/file_ops.py
+from pathlib import Path
+import json
+from typing import List, Any
+from datetime import datetime
 import os
-import yaml
-from datetime import date
 
 
-def read_event_file(year, month, week):
-    # Implement reading event file
-    pass
-
-
-def write_event_file(year, month, week, event_data):
-    # Implement writing to event file
-    pass
-
-
-def list_events_in_week(year, month, week):
-    # Implement listing events in a week
-    pass
-
-
-def read_tags_file():
-    with open("templates/tags.md", "r") as f:
-        tags = yaml.safe_load(f)
-    return tags
-
-
-def write_tags_file(tag_data, append=False):
-    if append:
-        tags = read_tags_file()
-        tags.append(tag_data)
+def ensure_dir(p: Path):
+    p = Path(p)
+    if p.is_file():
+        p.parent.mkdir(parents=True, exist_ok=True)
     else:
-        tags = [tag_data]
-
-    with open("templates/tags.md", "w") as f:
-        yaml.safe_dump(tags, f)
+        p.mkdir(parents=True, exist_ok=True)
 
 
-def read_people_file():
-    # Implement reading people file
-    pass
+def read_text_file(path: Path) -> str:
+    path = Path(path)
+    if not path.exists():
+        return ""
+    return path.read_text(encoding="utf-8")
 
 
-def write_people_file(person_data, append=False):
-    if append:
-        people = read_people_file()
-        people.append(person_data)
+def write_text_file(path: Path, content: str):
+    ensure_dir(path.parent)
+    path.write_text(content, encoding="utf-8")
+
+# JSON-block-in-MD format helpers. We store a single JSON array between markers:
+# <!--DATA_START-->
+# <json array>
+# <!--DATA_END-->
+
+
+def _wrap_marker(marker: str):
+    start = f"<!--{marker}_START-->"
+    end = f"<!--{marker}_END-->"
+    return start, end
+
+
+def read_json_block_from_md(path: Path, marker: str = "DATA") -> List[Any]:
+    path = Path(path)
+    if not path.exists():
+        return []
+    txt = path.read_text(encoding="utf-8")
+    start_marker, end_marker = _wrap_marker(marker)
+    if start_marker in txt and end_marker in txt:
+        start = txt.index(start_marker) + len(start_marker)
+        end = txt.index(end_marker)
+        raw = txt[start:end].strip()
+        try:
+            return json.loads(raw)
+        except Exception:
+            # graceful fallback: try lines of json objects
+            lines = [l.strip() for l in raw.splitlines() if l.strip()]
+            objs = []
+            for line in lines:
+                try:
+                    objs.append(json.loads(line))
+                except Exception:
+                    continue
+            return objs
     else:
-        people = [person_data]
-
-    with open("templates/people.md", "w") as f:
-        yaml.safe_dump(people, f)
+        return []
 
 
-def read_bio_file():
-    # Implement reading bio file
-    pass
+def write_json_block_to_md(path: Path, data: list, marker: str = "DATA", header: str = "", footer: str = ""):
+    ensure_dir(path.parent)
+    start_marker, end_marker = _wrap_marker(marker)
+    body = json.dumps(data, indent=2, default=str)
+    if path.exists():
+        txt = path.read_text(encoding="utf-8")
+        if start_marker in txt and end_marker in txt:
+            pre = txt[:txt.index(start_marker)]
+            post = txt[txt.index(end_marker) + len(end_marker):]
+            new = pre + start_marker + "\n" + body + "\n" + end_marker + post
+        else:
+            new = (header or "") + "\n" + start_marker + "\n" + \
+                body + "\n" + end_marker + "\n" + (footer or "")
+    else:
+        new = (header or "") + "\n" + start_marker + "\n" + \
+            body + "\n" + end_marker + "\n" + (footer or "")
+    path.write_text(new, encoding="utf-8")
 
 
-def write_bio_file(bio_data):
-    # Implement writing to bio file
-    pass
+def remove_item_from_json_md(path: Path, marker: str, predicate):
+    arr = read_json_block_from_md(path, marker=marker)
+    new = [x for x in arr if not predicate(x)]
+    write_json_block_to_md(path, new, marker=marker)
+    return new
 
 
-def read_personality_file():
-    # Implement reading personality file
-    pass
-
-
-def write_personality_file(personality_data):
-    # Implement writing to personality file
-    pass
+def timestamped_filename(base: str, ext: str = "md"):
+    ts = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+    safe = f"{base}_{ts}.{ext}"
+    return safe

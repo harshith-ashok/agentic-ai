@@ -1,21 +1,19 @@
-from fastapi import APIRouter, HTTPException, status
-from ollama import Client
+# api/routers/ai.py
+from fastapi import APIRouter
+from pydantic import BaseModel
+
 router = APIRouter()
 
-# Initialize the Ollama client (don't pass `model` here; the client methods accept `model`)
-client = Client()
+
+class AIQuery(BaseModel):
+    prompt: str
 
 
-@router.post("/generate-text/")
-def generate_text(prompt: str):
-    if not prompt:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Prompt is required")
-
-    try:
-        # Generate text using the Ollama client (pass model here)
-        response = client.generate(model="llama3.2", prompt=prompt)
-        return {"generated_text": response.text}
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+@router.post("/query")
+def query_llm(q: AIQuery):
+    """
+    Placeholder Llama 3.2 integration.
+    Later: embed prompt + templates content, retrieve context, call local Llama/Ollama.
+    """
+    # TODO: integrate embeddings & vector DB (placeholder)
+    return {"response": f"stub for Llama 3.2. Received prompt length {len(q.prompt)}"}

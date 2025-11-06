@@ -1,13 +1,17 @@
-from datetime import date, timedelta
+# api/utils/week_utils.py
+from datetime import datetime
+import calendar
 
 
-def get_week_info(date_value):
-    year = date_value.year
-    week_number = date_value.isocalendar()[1]
-    first_day_of_year = date(year, 1, 1)
-    days_to_first_monday = (first_day_of_year.weekday() - 0) % 7
-    first_monday = first_day_of_year + timedelta(days=-days_to_first_monday)
-    week_start = first_monday + timedelta(weeks=week_number-1)
-    week_end = week_start + timedelta(days=6)
-
-    return year, week_start.month, week_start.day
+def extract_year_month_week(d):
+    """
+    Returns (year, month, week_identifier).
+    week_identifier is ISO week number (string) but when saving files we keep it human friendly.
+    """
+    if isinstance(d, str):
+        d = datetime.fromisoformat(d)
+    year = d.isocalendar().year
+    week = d.isocalendar().week
+    month = d.month
+    # use week as 2-digit string for filenames
+    return year, month, f"week-{week:02d}"
