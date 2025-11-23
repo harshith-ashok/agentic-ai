@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from typing import List
 import uvicorn
 from models import AddMessageRequest, SearchQueryRequest, SearchByTagRequest, SearchResponse, MessageResponse
@@ -7,6 +8,14 @@ from faiss_store import FaissMemory
 app = FastAPI(title="Agentic MCP - FAISS Memory")
 
 store = FaissMemory()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.post("/add_message", response_model=dict)
