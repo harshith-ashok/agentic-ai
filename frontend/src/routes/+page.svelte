@@ -1,67 +1,38 @@
 <script lang="ts">
-	let results: any[] = [];
-	let errorMessage = '';
-
-	async function search_by_tag(tag: string) {
-		results = [];
-		errorMessage = '';
-
+	import { marked } from 'marked';
+	let rawResponse = '';
+	export async function sendMessage(message: string) {
+		const response = await fetch('http://localhost:8000/chat', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ message })
+		});
+		const text = await response.text();
 		try {
-			const response = await fetch('http://localhost:8000/search_by_tag', {
-				method: 'POST',
-				body: JSON.stringify({ tag }),
-				headers: { 'Content-Type': 'application/json' }
-			});
-
-			const text = await response.text();
-
-			// Try to parse JSON safely
-			let json;
-			try {
-				json = JSON.parse(text);
-			} catch (e) {
-				errorMessage = 'Response was not valid JSON:\n' + text;
-				return;
-			}
-
-			if (json.contexts && Array.isArray(json.contexts)) {
-				results = json.contexts;
+			const json = JSON.parse(text);
+			if (json && typeof json.reply_markdown !== 'undefined') {
+				rawResponse = String(json.reply_markdown);
 			} else {
-				errorMessage = "JSON missing expected 'contexts' array.";
+				rawResponse = text;
 			}
-		} catch (err) {
-			errorMessage = 'Fetch failed: ' + String(err);
+		} catch {
+			rawResponse = text;
 		}
 	}
 </script>
 
 <input
 	type="text"
-	placeholder="Search by tag and press Enter"
+	placeholder="Type a message and press Enter"
 	on:keydown={async (e) => {
 		if (e.key !== 'Enter') return;
 		const input = e.currentTarget as HTMLInputElement;
-		const tag = input.value.trim();
-		if (!tag) return;
-		await search_by_tag(tag);
+		const msg = input.value.trim();
+		if (!msg) return;
+		await sendMessage(msg);
 	}}
 />
 
-<!-- Error display -->
-{#if errorMessage}
-	<p style="color: red">{errorMessage}</p>
-{/if}
-
-<!-- Results list -->
-{#if results.length > 0}
-	<ul class="list list-disc">
-		{#each results as item}
-			<li style="margin-bottom: 1rem;" class="list list-disc">
-				<strong>Content:</strong>
-				{item.content}<br />
-				<strong>Tags:</strong>
-				{item.tags ? item.tags.join(', ') : 'none'}<br />
-			</li>
-		{/each}
-	</ul>
+{#if rawResponse}
+	{@html marked(rawResponse)}
 {/if}
