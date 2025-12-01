@@ -1,4 +1,4 @@
-# Memory Enabled AI PLug-in
+# Memory Enabled AI Plug-in
 
 A FastAPI-based conversational AI system with dual-layer memory management (short-term and long-term) powered by Ollama LLMs. This project integrates Redis for session-based short-term memory, MongoDB for persistent long-term memory, and FAISS for semantic similarity search.
 
